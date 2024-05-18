@@ -99,34 +99,81 @@ void Draw_Brick(HDC hdc, eBrick_Type brick_type, int x, int y)
 
 //------------------------------------------------------------------------------------------------------------
 
-void Draw_Brick_Letter(HDC hdc, int rotation_step, int x, int y)
+void Draw_Brick_Letter(HDC hdc, int rotation_step, eBrick_Type brick_type, int x, int y)
 {// Вывод падающей буквы
 
    double offset;
    double rotation_angle = 2.0 * M_PI * (double)rotation_step / 16.0;   // Преобразование шага в угол поворота
    int brick_half_height = Brick_Height * Global_Scale / 2;
    int back_part_offset;
-   int npi = rotation_angle / M_PI;                                     // Целая часть от деления на Пи
+//   int npi = rotation_angle / M_PI;                                     // Целая часть от деления на Пи
+   HPEN front_pen, back_pen;
+   HBRUSH front_brush, back_brush;
    XFORM xform, old_xform;
 
    SetGraphicsMode(hdc, GM_ADVANCED);
 
+   // Настраиваем матрицу "переворота"
    xform.eM11 = 1.0f;                                                   // Растягивает/сужает и переворачивает изображение по Х-координате
    xform.eM12 = 0.0f;                                                   // Поворачивают по/против часовой стрелки и не только
    xform.eM21 = 0.0f;                                                   // Поворачивают по/против часовой стрелки и не только
-   xform.eM22 = (float)cos(rotation_angle - npi * M_PI);                // Растягивает/сужает и переворачивает изображение по Y-координате
+   xform.eM22 = (float)cos(rotation_angle /*- npi * M_PI*/);                // Растягивает/сужает и переворачивает изображение по Y-координате
    xform.eDx = (float)x;                                                // Перемещение по Х-координате
    xform.eDy = (float)y + (float)brick_half_height;                     // Премещение по Y-координате
    
-   if (fabs(xform.eM22) < 0.1)                                          // Переходное изображение положения переворачивающегося кирпича 
+   if (!(brick_type == EBT_Blue || brick_type == EBT_Red))
+      return;  // Падающие буквы могут быть только от кирпичей такого типа
+  
+   if (xform.eM22 < -0.1)                                               // Значиние косинуса для диапазона от Пи/2 до 3Пи/2
    {
-      SelectObject(hdc, Brick_Red_Pen);
-      SelectObject(hdc, Brick_Red_Brush);
+      if (brick_type == EBT_Blue)
+      {
+         front_pen = Brick_Red_Pen;
+         front_brush = Brick_Red_Brush;
+
+         back_pen = Brick_Blue_Pen;
+         back_brush = Brick_Blue_Brush;
+      }
+      else
+      {
+         front_pen = Brick_Blue_Pen;
+         front_brush = Brick_Blue_Brush;
+
+         back_pen = Brick_Red_Pen;
+         back_brush = Brick_Red_Brush;
+      }
+   }
+   else
+   {
+      if (brick_type == EBT_Red)
+      {
+         front_pen = Brick_Red_Pen;
+         front_brush = Brick_Red_Brush;
+
+         back_pen = Brick_Blue_Pen;
+         back_brush = Brick_Blue_Brush;
+      }
+      else
+      {
+         front_pen = Brick_Blue_Pen;
+         front_brush = Brick_Blue_Brush;
+
+         back_pen = Brick_Red_Pen;
+         back_brush = Brick_Red_Brush;
+      }
+   }
+
+   if (fabs(xform.eM22) < 0.1)                                          // Переходное изображение положения переворачивающегося кирпича 
+   {  
+      // Выводим обратную сторону падающего переворачивающегося кирпича
+      SelectObject(hdc, back_pen);
+      SelectObject(hdc, back_brush);
 
       Rectangle(hdc, 0 + (int)xform.eDx, 0 + (int)xform.eDy, Brick_Width * Global_Scale + (int)xform.eDx, -Global_Scale + (int)xform.eDy);      // Используем значения xform.Edx, вместо SetWorldTransform, преобразовывающего ещё и форму кирпича 
-
-      SelectObject(hdc, Brick_Blue_Pen);
-      SelectObject(hdc, Brick_Blue_Brush);
+      
+      // Выводим лицевую сторону падающего переворачивающегося кирпича
+      SelectObject(hdc, front_pen);
+      SelectObject(hdc, front_brush);
 
       Rectangle(hdc, 0 + (int)xform.eDx, 0 + (int)xform.eDy, Brick_Width * Global_Scale + (int)xform.eDx, Global_Scale + (int)xform.eDy - 1);   // Используем значения xform.Edx, вместо SetWorldTransform, преобразовывающего ещё и форму кирпича 
    }
@@ -134,22 +181,23 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, int x, int y)
    {
       GetWorldTransform(hdc, &old_xform);                               // Записывает текущую трансформацию мира в old_xform
       SetWorldTransform(hdc, &xform);                                   // Преобразует мир согласно xform
-
-      SelectObject(hdc, Brick_Red_Pen);
-      SelectObject(hdc, Brick_Red_Brush);
+      
+      // Выводим обратную сторону падающего переворачивающегося кирпича
+      SelectObject(hdc, back_pen);
+      SelectObject(hdc, back_brush);
 
       offset = 3.0f * (1.0f - fabs(xform.eM22)) * (double)Global_Scale; // Отвечает за одновременный показ лицевой и обратной стороны кирпича
       back_part_offset = (int)round(offset);                            // Отвечает за одновременный показ лицевой и обратной стороны кирпича
 
       Rectangle(hdc, 0, -brick_half_height - back_part_offset, Brick_Width * Global_Scale, brick_half_height - back_part_offset);
-
-      SelectObject(hdc, Brick_Blue_Pen);
-      SelectObject(hdc, Brick_Blue_Brush);
+      
+      // Выводим лицевую сторону падающего переворачивающегося кирпича
+      SelectObject(hdc, front_pen);
+      SelectObject(hdc, front_brush);
 
       Rectangle(hdc, 0, -brick_half_height, Brick_Width * Global_Scale, brick_half_height);
    
       SetWorldTransform(hdc, &old_xform);                               // Преобразует мир согласно old_xform
-
    }
 }
 
@@ -200,9 +248,11 @@ void Draw_Frame(HDC hdc)
 
    //Draw_Platform(hdc, 50, 100);
 
-   for (int i = 0; i < 16; i ++)
-      Draw_Brick_Letter(hdc, i, 20 + i * Cell_Width * Global_Scale, 100);
-
+   for (int i = 0; i < 16; i++)
+   {
+      Draw_Brick_Letter(hdc, i, EBT_Blue, 20 + i * Cell_Width * Global_Scale, 100);
+      Draw_Brick_Letter(hdc, i, EBT_Red, 20 + i * Cell_Width * Global_Scale, 130);
+   }
 }
 
 //------------------------------------------------------------------------------------------------------------
