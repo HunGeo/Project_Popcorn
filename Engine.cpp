@@ -106,6 +106,7 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, int x, int y)
    double rotation_angle = 2.0 * M_PI * (double)rotation_step / 16.0;   // Преобразование шага в угол поворота
    int brick_half_height = Brick_Height * Global_Scale / 2;
    int back_part_offset;
+   int npi = rotation_angle / M_PI;                                     // Целая часть от деления на Пи
    XFORM xform, old_xform;
 
    SetGraphicsMode(hdc, GM_ADVANCED);
@@ -113,7 +114,7 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, int x, int y)
    xform.eM11 = 1.0f;                                                   // Растягивает/сужает и переворачивает изображение по Х-координате
    xform.eM12 = 0.0f;                                                   // Поворачивают по/против часовой стрелки и не только
    xform.eM21 = 0.0f;                                                   // Поворачивают по/против часовой стрелки и не только
-   xform.eM22 = (float)cos(rotation_angle);                             // Растягивает/сужает и переворачивает изображение по Y-координате
+   xform.eM22 = (float)cos(rotation_angle - npi * M_PI);                // Растягивает/сужает и переворачивает изображение по Y-координате
    xform.eDx = (float)x;                                                // Перемещение по Х-координате
    xform.eDy = (float)y + (float)brick_half_height;                     // Премещение по Y-координате
    
@@ -148,8 +149,6 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, int x, int y)
       Rectangle(hdc, 0, -brick_half_height, Brick_Width * Global_Scale, brick_half_height);
    
       SetWorldTransform(hdc, &old_xform);                               // Преобразует мир согласно old_xform
-
-      if (xform.eM22 < - 0.95)
 
    }
 }
