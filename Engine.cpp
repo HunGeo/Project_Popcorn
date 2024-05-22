@@ -3,14 +3,20 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
-enum eBrick_Type
+enum EBrick_Type
 {
    EBT_None,
    EBT_Red,
    EBT_Blue
 };
 
-HPEN Highlight_Pen, Brick_Red_Pen, Brick_Blue_Pen, Platform_Circle_Pen, Platform_Inner_Pen;
+enum ELetter_Type
+{
+   ELT_None,
+   ELT_O
+};
+
+HPEN Highlight_Pen, Letter_Pen, Brick_Red_Pen, Brick_Blue_Pen, Platform_Circle_Pen, Platform_Inner_Pen;
 HBRUSH Brick_Red_Brush, Brick_Blue_Brush, Platform_Circle_Brush, Platform_Inner_Brush;
 
 const int Global_Scale = 3;
@@ -56,6 +62,7 @@ void Init()
 {//Настройка игры при старте
    
    Highlight_Pen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
+   Letter_Pen = CreatePen(PS_SOLID, Global_Scale, RGB(255, 255, 255));
 
    Create_Pen_Brush(255, 79, 79, Brick_Red_Pen, Brick_Red_Brush);
    Create_Pen_Brush(85, 255, 255, Brick_Blue_Pen, Brick_Blue_Brush);
@@ -65,7 +72,7 @@ void Init()
 
 //------------------------------------------------------------------------------------------------------------
 
-void Draw_Brick(HDC hdc, eBrick_Type brick_type, int x, int y)
+void Draw_Brick(HDC hdc, EBrick_Type brick_type, int x, int y)
 {//Вывод керпича
    HPEN pen;
    HBRUSH brush;
@@ -99,11 +106,34 @@ void Draw_Brick(HDC hdc, eBrick_Type brick_type, int x, int y)
 
 //------------------------------------------------------------------------------------------------------------
 
-void Draw_Brick_Letter(HDC hdc, int rotation_step, eBrick_Type brick_type, int x, int y)
+void Set_Brick_Letter_Colors(bool is_switch_color, EBrick_Type brick_type, HPEN &front_pen, HBRUSH &front_brush, HPEN& back_pen, HBRUSH& back_brush)
+{//
+   if (is_switch_color)
+   {
+      front_pen = Brick_Red_Pen;
+      front_brush = Brick_Red_Brush;
+
+      back_pen = Brick_Blue_Pen;
+      back_brush = Brick_Blue_Brush;
+   }
+   else
+   {
+      front_pen = Brick_Blue_Pen;
+      front_brush = Brick_Blue_Brush;
+
+      back_pen = Brick_Red_Pen;
+      back_brush = Brick_Red_Brush;
+   }
+}
+
+//------------------------------------------------------------------------------------------------------------
+
+void Draw_Brick_Letter(HDC hdc, int rotation_step, EBrick_Type brick_type, ELetter_Type letter_type, int x, int y)
 {// Вывод падающей буквы
 
+   bool switch_color;
    double offset;
-   double rotation_angle = 2.0 * M_PI * (double)rotation_step / 16.0;   // Преобразование шага в угол поворота
+   double rotation_angle;   // Преобразование шага в угол поворота
    int brick_half_height = Brick_Height * Global_Scale / 2;
    int back_part_offset;
 //   int npi = rotation_angle / M_PI;                                     // Целая часть от деления на Пи
@@ -113,57 +143,34 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, eBrick_Type brick_type, int x
 
    SetGraphicsMode(hdc, GM_ADVANCED);
 
+   if (sin(2.0 * M_PI * (double)rotation_step / 16.0) > -0.1)
+   {
+      rotation_angle = 2.0 * M_PI * (double)rotation_step / 16.0;
+   }
+   else
+   {
+      rotation_angle = 2.0 * M_PI * (double)(8 - rotation_step) / 16.0;
+   }
+
    // Настраиваем матрицу "переворота"
    xform.eM11 = 1.0f;                                                   // Растягивает/сужает и переворачивает изображение по Х-координате
    xform.eM12 = 0.0f;                                                   // Поворачивают по/против часовой стрелки и не только
    xform.eM21 = 0.0f;                                                   // Поворачивают по/против часовой стрелки и не только
-   xform.eM22 = (float)cos(rotation_angle /*- npi * M_PI*/);                // Растягивает/сужает и переворачивает изображение по Y-координате
+   xform.eM22 = (float)cos(rotation_angle /* - npi * M_PI*/);                // Растягивает/сужает и переворачивает изображение по Y-координате
    xform.eDx = (float)x;                                                // Перемещение по Х-координате
    xform.eDy = (float)y + (float)brick_half_height;                     // Премещение по Y-координате
    
    if (!(brick_type == EBT_Blue || brick_type == EBT_Red))
       return;  // Падающие буквы могут быть только от кирпичей такого типа
-  
-   if (xform.eM22 < -0.1)                                               // Значиние косинуса для диапазона от Пи/2 до 3Пи/2
-   {
-      if (brick_type == EBT_Blue)
-      {
-         front_pen = Brick_Red_Pen;
-         front_brush = Brick_Red_Brush;
 
-         back_pen = Brick_Blue_Pen;
-         back_brush = Brick_Blue_Brush;
-      }
-      else
-      {
-         front_pen = Brick_Blue_Pen;
-         front_brush = Brick_Blue_Brush;
-
-         back_pen = Brick_Red_Pen;
-         back_brush = Brick_Red_Brush;
-      }
-   }
+   if ((cos(2.0 * M_PI * (double)rotation_step / 16.0) < -0.1) || sin(2.0 * M_PI * (double)rotation_step / 16.0) < -0.9)   // Значиние косинуса для диапазона от Пи/2 до 3Пи/2, от сплюснутого до развёрнутого
+      switch_color = brick_type == EBT_Blue;
    else
-   {
-      if (brick_type == EBT_Red)
-      {
-         front_pen = Brick_Red_Pen;
-         front_brush = Brick_Red_Brush;
+      switch_color = brick_type == EBT_Red;
 
-         back_pen = Brick_Blue_Pen;
-         back_brush = Brick_Blue_Brush;
-      }
-      else
-      {
-         front_pen = Brick_Blue_Pen;
-         front_brush = Brick_Blue_Brush;
+   Set_Brick_Letter_Colors(switch_color, brick_type, front_pen, front_brush, back_pen, back_brush);
 
-         back_pen = Brick_Red_Pen;
-         back_brush = Brick_Red_Brush;
-      }
-   }
-
-   if (fabs(xform.eM22) < 0.1)                                          // Переходное изображение положения переворачивающегося кирпича 
+   if (fabs(xform.eM22) < 0.1)   // Значиние косинуса для Пи/2 и 3Пи/2, переходное изображение положения переворачивающегося кирпича, 
    {  
       // Выводим обратную сторону падающего переворачивающегося кирпича
       SelectObject(hdc, back_pen);
@@ -177,7 +184,7 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, eBrick_Type brick_type, int x
 
       Rectangle(hdc, 0 + (int)xform.eDx, 0 + (int)xform.eDy, Brick_Width * Global_Scale + (int)xform.eDx, Global_Scale + (int)xform.eDy - 1);   // Используем значения xform.Edx, вместо SetWorldTransform, преобразовывающего ещё и форму кирпича 
    }
-   else
+   else                                                                 // Описывает все значения косинусов
    {
       GetWorldTransform(hdc, &old_xform);                               // Записывает текущую трансформацию мира в old_xform
       SetWorldTransform(hdc, &xform);                                   // Преобразует мир согласно xform
@@ -196,7 +203,17 @@ void Draw_Brick_Letter(HDC hdc, int rotation_step, eBrick_Type brick_type, int x
       SelectObject(hdc, front_brush);
 
       Rectangle(hdc, 0, -brick_half_height, Brick_Width * Global_Scale, brick_half_height);
-   
+
+      if (cos(2.0 * M_PI * (double)rotation_step / 16.0) < -0.1)
+      {
+         if (letter_type == ELT_O)
+         {
+            SelectObject(hdc, Letter_Pen);
+
+            Ellipse(hdc, (0 + 5)* Global_Scale, -brick_half_height + 1 * Global_Scale, (Brick_Width - 5)* Global_Scale, brick_half_height - 1 * Global_Scale);
+         }
+      }
+
       SetWorldTransform(hdc, &old_xform);                               // Преобразует мир согласно old_xform
    }
 }
@@ -211,7 +228,7 @@ void Draw_Level(HDC hdc)
    for (i = 0; i < 14; i++)
       for (j = 0; j < 12; j++)
       {
-         Draw_Brick(hdc, (eBrick_Type)Level_01[i][j], Level_X_Offset + j * Cell_Width, Level_Y_Offset+ i * Cell_Height);
+         Draw_Brick(hdc, (EBrick_Type)Level_01[i][j], Level_X_Offset + j * Cell_Width, Level_Y_Offset+ i * Cell_Height);
       }
 }
 
@@ -250,8 +267,8 @@ void Draw_Frame(HDC hdc)
 
    for (int i = 0; i < 16; i++)
    {
-      Draw_Brick_Letter(hdc, i, EBT_Blue, 20 + i * Cell_Width * Global_Scale, 100);
-      Draw_Brick_Letter(hdc, i, EBT_Red, 20 + i * Cell_Width * Global_Scale, 130);
+      Draw_Brick_Letter(hdc, i, EBT_Blue, ELT_O, 20 + i * Cell_Width * Global_Scale, 100);
+      Draw_Brick_Letter(hdc, i, EBT_Red, ELT_O, 20 + i * Cell_Width * Global_Scale, 130);
    }
 }
 
