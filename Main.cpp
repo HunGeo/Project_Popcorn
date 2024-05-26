@@ -1,6 +1,4 @@
 ﻿// Popcorn.cpp : Defines the entry point for the application.
-//
-
 #include "framework.h"
 #include "Main.h"
 
@@ -53,9 +51,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     return (int) msg.wParam;
 }
-
-
-
 //
 //  FUNCTION: MyRegisterClass()
 //
@@ -81,8 +76,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     return RegisterClassExW(&wcex);
 }
 //------------------------------------------------------------------------------------------------------------
-
-
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
 //
@@ -96,8 +89,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
-
-   Init();
 
    RECT window_rect;
    window_rect.left = 0;
@@ -113,19 +104,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    if (hWnd == 0)
       return FALSE;
 
+   Init_Engine(hWnd);
+
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
    return TRUE;
 }
-
-
-
-
-
 //------------------------------------------------------------------------------------------------------------
-
-
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -164,18 +150,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code that uses hdc here...
-
             Draw_Frame(hdc);
-
             EndPaint(hWnd, &ps);
         }
         break;
-
 
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
 
+    case WM_KEYDOWN:
+       switch (wParam)
+       {
+       case VK_LEFT:
+          return On_Key_Down(EKT_Left);
+               
+       case VK_RIGHT:
+          return On_Key_Down(EKT_Right);
+
+       case VK_SPACE:
+          return On_Key_Down(EKT_Space);
+       }
+       break;
 
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
