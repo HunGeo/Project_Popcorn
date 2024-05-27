@@ -10,5 +10,5 @@ enum EKey_Type
 };
 
 void Init_Engine(HWND hwnd);
-void Draw_Frame(HDC hdc);
+void Draw_Frame(HDC hdc, RECT& paint_area);
 int On_Key_Down(EKey_Type key_type);

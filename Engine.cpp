@@ -27,6 +27,8 @@ const int Cell_Width = Brick_Width + 1;
 const int Cell_Height = Brick_Height + 1;
 const int Level_X_Offset = 8;
 const int Level_Y_Offset= 6;
+const int Level_Width = 14;   // Width expressed in cells 
+const int Level_Height = 12;  // Height expressed in cells
 const int Circle_Size = 7;
 const int Platform_Y_Pos = 185;
 const int Platform_Height = 7;
@@ -37,8 +39,9 @@ int Platform_X_Step = Global_Scale;
 int Platform_Width = 28;
 
 RECT Platform_Rect, Prev_Platform_Rect;
+RECT Level_Rect;
 
-char Level_01[14][12] =
+char Level_01[Level_Width][Level_Height] =
 {
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -64,10 +67,9 @@ void Create_Pen_Brush(unsigned char r, unsigned char g, unsigned char b, HPEN &p
 //------------------------------------------------------------------------------------------------------------
 void Redraw_Platform()
 {
-
    Prev_Platform_Rect = Platform_Rect;
 
-   Platform_Rect.left = Platform_X_Pos * Global_Scale;
+   Platform_Rect.left = (Platform_X_Pos + Level_X_Offset) * Global_Scale;
    Platform_Rect.top = Platform_Y_Pos * Global_Scale;
    Platform_Rect.right = Platform_Rect.left + Platform_Width * Global_Scale;
    Platform_Rect.bottom = Platform_Rect.top + Platform_Height * Global_Scale;
@@ -89,6 +91,11 @@ void Init_Engine(HWND hwnd)
    Create_Pen_Brush(85, 255, 255, Brick_Blue_Pen, Brick_Blue_Brush);
    Create_Pen_Brush(159, 0, 0, Platform_Circle_Pen, Platform_Circle_Brush);
    Create_Pen_Brush(0, 127, 191, Platform_Inner_Pen, Platform_Inner_Brush);
+
+   Level_Rect.left = Level_X_Offset * Global_Scale;
+   Level_Rect.top = Level_Y_Offset * Global_Scale;
+   Level_Rect.right = Level_X_Offset + Cell_Width * Level_Width * Global_Scale;
+   Level_Rect.bottom = Level_Y_Offset + Cell_Height * Level_Height * Global_Scale;
 
    Redraw_Platform();
 }
@@ -275,12 +282,15 @@ void Draw_Platform(HDC hdc, int x, int y)
    RoundRect(hdc, (x + 4) * Global_Scale, (y + 1) * Global_Scale, (x + 3 + Inner_Width) * Global_Scale, (y + Circle_Size - 1) * Global_Scale, Global_Scale * 3, Global_Scale * 3);
 }
 //------------------------------------------------------------------------------------------------------------
-void Draw_Frame(HDC hdc)
+void Draw_Frame(HDC hdc, RECT &paint_area)
 { // Отрисовка экрана игры
 
-   //Draw_Level(hdc);
+   RECT intersection_rect;
+   if (IntersectRect(&intersection_rect, &paint_area, &Level_Rect))
+      Draw_Level(hdc);
 
-   Draw_Platform(hdc, Platform_X_Pos, Platform_Y_Pos);
+   if (IntersectRect(&intersection_rect, &paint_area, &Platform_Rect))
+      Draw_Platform(hdc, Platform_X_Pos + Level_X_Offset, Platform_Y_Pos);
 
    //for (int i = 0; i < 16; i++)
    //{
