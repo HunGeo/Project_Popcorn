@@ -150,7 +150,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code that uses hdc here...
-            
             Draw_Frame(hdc, ps.rcPaint);
             EndPaint(hWnd, &ps);
         }
@@ -172,6 +171,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
        case VK_SPACE:
           return On_Key_Down(EKT_Space);
        }
+       break;
+
+    case WM_TIMER:
+       if (wParam == Timer_ID)
+          return On_Timer();
        break;
 
     default:
