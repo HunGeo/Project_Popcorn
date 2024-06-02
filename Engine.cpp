@@ -23,11 +23,12 @@ HBRUSH BG_Brush, Brick_Red_Brush, Brick_Blue_Brush, Platform_Circle_Brush, Platf
 const int Global_Scale = 3;
 const int Brick_Width = 15, Brick_Height = 7;
 const int Cell_Width = Brick_Width + 1, Cell_Height = Brick_Height + 1; 
-const int Level_X_Offset = 8, Level_Y_Offset = 6;
+const int Level_X_Offset = 8, Level_Y_Offset = 6;                       // Coordinates of the beginning of the level
 const int Level_Width = 12, Level_Height = 14;                          // Width and Height expressed in cells
 const int Circle_Size = 7;
 const int Platform_Y_Pos = 185, Platform_Height = 7;
 const int Ball_Size = 4;
+const int Level_X_Offset_Left = 8, Level_X_Offset_Right = Level_X_Offset_Left + Cell_Width * Level_Width;
 
 
 int Inner_Width = 21;
@@ -38,6 +39,7 @@ int Timer_Frequency = 20;      // Frame refresh time in msec
 
 double Ball_X_Pos = 20.0, Ball_Y_Pos = 170.0;
 double Ball_Speed = 1.0, Ball_Direction = M_PI_4;
+double Cos_Ball_Direction = cos(Ball_Direction), Sin_Ball_Direction = sin(Ball_Direction);
 
 RECT Platform_Rect, Prev_Platform_Rect;
 RECT Level_Rect;
@@ -81,8 +83,7 @@ void Redraw_Platform()
 }
 //------------------------------------------------------------------------------------------------------------
 void Init_Engine(HWND hwnd)
-{//Настройка игры при старте
-   
+{//Setting up the game at startup
    Hwnd = hwnd;
 
    Highlight_Pen = CreatePen(PS_SOLID, 0, RGB(255, 255, 255));
@@ -106,7 +107,7 @@ void Init_Engine(HWND hwnd)
 }
 //------------------------------------------------------------------------------------------------------------
 void Draw_Brick(HDC hdc, EBrick_Type brick_type, int x, int y)
-{//Вывод керпича
+{//Brick output
    HPEN pen;
    HBRUSH brush;
 
@@ -127,14 +128,12 @@ void Draw_Brick(HDC hdc, EBrick_Type brick_type, int x, int y)
 
    default:
       return;
-
    }
 
    SelectObject(hdc, pen);
    SelectObject(hdc, brush);
 
    RoundRect(hdc, x * Global_Scale, y * Global_Scale, (x + Brick_Width) * Global_Scale, (y + Brick_Height) * Global_Scale, Global_Scale * 2, Global_Scale * 2);
-
 }
 //------------------------------------------------------------------------------------------------------------
 void Set_Brick_Letter_Colors(bool is_switch_color, EBrick_Type brick_type, HPEN &front_pen, HBRUSH &front_brush, HPEN& back_pen, HBRUSH& back_brush)
@@ -342,15 +341,47 @@ int On_Key_Down(EKey_Type key_type)
    return 0;
 }
 //------------------------------------------------------------------------------------------------------------
+void Ball_Reflection_Wall()
+{
+   if (Ball_X_Pos < 0)                                                              // From the left
+   {
+      Cos_Ball_Direction = -Cos_Ball_Direction;
+      Ball_X_Pos = -Ball_X_Pos;
+   }
+   if (Ball_X_Pos > Level_X_Offset_Right - Level_X_Offset_Left - Ball_Size)         // From the right
+   {
+      Cos_Ball_Direction = -Cos_Ball_Direction;
+      Ball_X_Pos = 2 * (Level_X_Offset_Right - Level_X_Offset_Left - Ball_Size) - Ball_X_Pos;
+   }
+   if (Ball_Y_Pos < 0)                                                              // From the top
+   {
+      Sin_Ball_Direction = -Sin_Ball_Direction;
+      Ball_Y_Pos = -Ball_Y_Pos;
+   }
+   if (Ball_Y_Pos > 185 - Ball_Size)                                                // From the bottom
+   {
+      Sin_Ball_Direction = -Sin_Ball_Direction;
+      Ball_Y_Pos = 180;
+   }
+
+}
+//------------------------------------------------------------------------------------------------------------
+void Ball_Reflection_Brick()
+{
+   RECT interseption_rect;
+
+   int i, j;
+   
+}
+//------------------------------------------------------------------------------------------------------------
 void Move_Ball()
 {
    Prev_Ball_Rect = Ball_Rect;
 
-   
+   Ball_X_Pos += Cos_Ball_Direction * Ball_Speed;
+   Ball_Y_Pos -= Sin_Ball_Direction * Ball_Speed;
 
-   
-   Ball_X_Pos += cos(Ball_Direction) * Ball_Speed;
-   Ball_Y_Pos -= sin(Ball_Direction) * Ball_Speed;
+   Ball_Reflection_Wall();
 
    Ball_Rect.left = (int)round((Level_X_Offset + Ball_X_Pos) * Global_Scale);
    Ball_Rect.top = (int)round((Level_Y_Offset + Ball_Y_Pos) * Global_Scale);
