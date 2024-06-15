@@ -102,8 +102,7 @@ void Generate_Bricks_Level_Rects()
    }
 }
 //------------------------------------------------------------------------------------------------------------
-
-void Init_Engine(HWND hwnd)
+void AsEngine::Init_Engine(HWND hwnd)
 {//Setting up the game at startup
    Hwnd = hwnd;
 
@@ -127,6 +126,63 @@ void Init_Engine(HWND hwnd)
    Generate_Bricks_Level_Rects();
 
    SetTimer(Hwnd, Timer_ID, Timer_Frequency, 0);
+}
+//------------------------------------------------------------------------------------------------------------
+void AsEngine::Draw_Frame(HDC hdc, RECT& paint_area)
+{ // Draw the game window
+
+   RECT intersection_rect;
+   if (IntersectRect(&intersection_rect, &paint_area, &Level_Rect))
+      Draw_Level(hdc);
+
+   if (IntersectRect(&intersection_rect, &paint_area, &Platform_Rect))
+      Draw_Platform(hdc, Platform_X_Pos, Platform_Y_Pos);
+
+   //for (int i = 0; i < 16; i++)
+   //{
+   //   Draw_Brick_Letter(hdc, i, EBT_Blue, ELT_O, 20 + i * Cell_Width * Global_Scale, 100);
+   //   Draw_Brick_Letter(hdc, i, EBT_Red, ELT_O, 20 + i * Cell_Width * Global_Scale, 130);
+   //}
+   if (IntersectRect(&intersection_rect, &paint_area, &Ball_Rect))
+      Draw_Ball(hdc, paint_area);
+
+   Draw_Bounds(hdc, paint_area);
+
+}
+//------------------------------------------------------------------------------------------------------------
+int AsEngine::On_Key_Down(EKey_Type key_type)
+{//
+   switch (key_type)
+   {
+   case EKT_Left:
+      Platform_X_Pos -= Platform_X_Step;
+
+      if (Platform_X_Pos < Border_X_Offset)
+         Platform_X_Pos = Border_X_Offset;
+
+      Redraw_Platform();
+      break;
+
+   case EKT_Right:
+      Platform_X_Pos += Platform_X_Step;
+
+      if (Platform_X_Pos > Max_X_Pos - Platform_Width)
+         Platform_X_Pos = Max_X_Pos - Platform_Width;
+
+      Redraw_Platform();
+      break;
+
+   case EKT_Space:
+      break;
+   }
+   return 0;
+}
+//------------------------------------------------------------------------------------------------------------
+int AsEngine::On_Timer()
+{//
+   Move_Ball();
+
+   return 0;
 }
 //------------------------------------------------------------------------------------------------------------
 void Draw_Brick(HDC hdc, EBrick_Type brick_type, int x, int y)
@@ -373,56 +429,6 @@ void Draw_Bounds(HDC hdc, RECT& paint_area)
 
 }
 //------------------------------------------------------------------------------------------------------------
-void Draw_Frame(HDC hdc, RECT &paint_area)
-{ // Draw the game window
-
-   RECT intersection_rect;
-   if (IntersectRect(&intersection_rect, &paint_area, &Level_Rect))
-      Draw_Level(hdc);
-
-   if (IntersectRect(&intersection_rect, &paint_area, &Platform_Rect))
-      Draw_Platform(hdc, Platform_X_Pos, Platform_Y_Pos);
-   
-   //for (int i = 0; i < 16; i++)
-   //{
-   //   Draw_Brick_Letter(hdc, i, EBT_Blue, ELT_O, 20 + i * Cell_Width * Global_Scale, 100);
-   //   Draw_Brick_Letter(hdc, i, EBT_Red, ELT_O, 20 + i * Cell_Width * Global_Scale, 130);
-   //}
-   if (IntersectRect(&intersection_rect, &paint_area, &Ball_Rect))
-      Draw_Ball(hdc, paint_area);
-   
-   Draw_Bounds(hdc, paint_area);
-
-}
-//------------------------------------------------------------------------------------------------------------
-int On_Key_Down(EKey_Type key_type)
-{//
-   switch (key_type)
-   {
-   case EKT_Left:
-      Platform_X_Pos -= Platform_X_Step;
-      
-      if (Platform_X_Pos < Border_X_Offset)
-         Platform_X_Pos = Border_X_Offset;
-      
-      Redraw_Platform();
-      break;
-
-   case EKT_Right:
-      Platform_X_Pos += Platform_X_Step;
-      
-      if (Platform_X_Pos > Max_X_Pos - Platform_Width)
-         Platform_X_Pos = Max_X_Pos - Platform_Width;
-      
-      Redraw_Platform();
-      break;
-   
-   case EKT_Space:
-      break;
-   }
-   return 0;
-}
-//------------------------------------------------------------------------------------------------------------
 void Ball_Reflection_Wall()
 {//
    if (Ball_X_Pos < Border_X_Offset)                                                             // From the left
@@ -525,11 +531,4 @@ void Move_Ball()
    Ball_Reflection_Brick();
    Ball_Reflection_Wall();
    Ball_Reflection_Platform();
-}
-//------------------------------------------------------------------------------------------------------------
-int On_Timer()
-{//
-   Move_Ball();
-
-   return 0;
 }
