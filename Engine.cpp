@@ -17,11 +17,60 @@ char Level_01[AsEngine::Level_Height][AsEngine::Level_Width] =
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+
+//------------------------------------------------------------------------------------------------------------
+void ABall::Draw_Ball(HDC hdc, RECT &paint_area)
+{
+   // Draw background
+   SelectObject(hdc, BG_Pen);
+   SelectObject(hdc, BG_Brush);
+
+   Rectangle(hdc, Prev_Ball_Rect.left, Prev_Ball_Rect.top, Prev_Ball_Rect.right, Prev_Ball_Rect.bottom);
+
+   // Draw ball
+   SelectObject(hdc, White_Pen);
+   SelectObject(hdc, White_Brush);
+
+   Ellipse(hdc, Ball_Rect.left, Ball_Rect.top, Ball_Rect.right - 1, Ball_Rect.bottom - 1);
+}
+//------------------------------------------------------------------------------------------------------------
+void ABall::Move_Ball()
+{//
+   Prev_Ball_Rect = Ball_Rect;
+
+   Prev_Ball_X_Pos = Ball_X_Pos;
+   Prev_Ball_Y_Pos = Ball_Y_Pos;
+
+   Ball_X_Pos += Cos_Ball_Direction * Ball_Speed;
+   Ball_Y_Pos -= Sin_Ball_Direction * Ball_Speed;
+
+   Ball_Reflection_Wall();
+
+   Ball_Rect.left = (int)round((Ball_X_Pos) * Global_Scale);
+   Ball_Rect.top = (int)round((Ball_Y_Pos) * Global_Scale);
+   Ball_Rect.right = (int)round(Ball_Rect.left + Ball_Size * Global_Scale);
+   Ball_Rect.bottom = (int)round(Ball_Rect.top + Ball_Size * Global_Scale);
+
+   InvalidateRect(Hwnd, &Prev_Ball_Rect, FALSE);
+   InvalidateRect(Hwnd, &Ball_Rect, FALSE);
+
+   Ball_Reflection_Brick();
+   Ball_Reflection_Wall();
+   Ball_Reflection_Platform();
+}
+//------------------------------------------------------------------------------------------------------------
+
+
+
+
+//------------------------------------------------------------------------------------------------------------
+ABall::AsEngine()
+: Ball_X_Pos(20.0), Ball_Y_Pos(170.0), Ball_Speed(1.0), Ball_Direction(M_PI_4), Cos_Ball_Direction(cos(Ball_Direction)), Sin_Ball_Direction(sin(Ball_Direction)), Timer_Frequency(20)/*Frame refresh time in msec*/ 
+{
+}
 //------------------------------------------------------------------------------------------------------------
 AsEngine::AsEngine()
-: Inner_Width(21), Platform_X_Pos(Level_X_Offset_Left), Platform_X_Step(Global_Scale), Platform_Width(28), Timer_Frequency(20)/*Frame refresh time in msec*/,
-  Ball_X_Pos(20.0), Ball_Y_Pos(170.0), Ball_Speed(1.0), Ball_Direction(M_PI_4),
-  Cos_Ball_Direction(cos(Ball_Direction)), Sin_Ball_Direction(sin(Ball_Direction))
+: Inner_Width(21), Platform_X_Pos(Level_X_Offset_Left), Platform_X_Step(Global_Scale), Platform_Width(28)
 {
 }
 //------------------------------------------------------------------------------------------------------------
@@ -51,7 +100,7 @@ void AsEngine::Init_Engine(HWND hwnd)
    SetTimer(Hwnd, Timer_ID, Timer_Frequency, 0);
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Draw_Frame(HDC hdc, RECT& paint_area)
+void AsEngine::Draw_Frame(HDC hdc, RECT &paint_area)
 { // Draw the game window
 
    RECT intersection_rect;
@@ -173,7 +222,7 @@ void AsEngine::Draw_Brick(HDC hdc, EBrick_Type brick_type, int x, int y)
    RoundRect(hdc, x * Global_Scale, y * Global_Scale, (x + Brick_Width) * Global_Scale, (y + Brick_Height) * Global_Scale, Global_Scale * 2, Global_Scale * 2);
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Set_Brick_Letter_Colors(bool is_switch_color, EBrick_Type brick_type, HPEN &front_pen, HBRUSH &front_brush, HPEN& back_pen, HBRUSH& back_brush)
+void AsEngine::Set_Brick_Letter_Colors(bool is_switch_color, EBrick_Type brick_type, HPEN &front_pen, HBRUSH &front_brush, HPEN &back_pen, HBRUSH &back_brush)
 {//
    if (is_switch_color)
    {
@@ -354,22 +403,7 @@ void AsEngine::Draw_Platform(HDC hdc, int x, int y)
    RoundRect(hdc, (x + 4) * Global_Scale, (y + 1) * Global_Scale, (x + 3 + Inner_Width) * Global_Scale, (y + Circle_Size - 1) * Global_Scale, Global_Scale * 3, Global_Scale * 3);
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Draw_Ball(HDC hdc, RECT &paint_area)
-{
-   // Draw background
-   SelectObject(hdc, BG_Pen);
-   SelectObject(hdc, BG_Brush);
-
-   Rectangle(hdc, Prev_Ball_Rect.left, Prev_Ball_Rect.top, Prev_Ball_Rect.right, Prev_Ball_Rect.bottom);
-
-   // Draw ball
-   SelectObject(hdc, White_Pen);
-   SelectObject(hdc, White_Brush);
-
-   Ellipse(hdc, Ball_Rect.left, Ball_Rect.top, Ball_Rect.right - 1, Ball_Rect.bottom - 1);
-}
-//------------------------------------------------------------------------------------------------------------
-void AsEngine::Draw_Bounds(HDC hdc, RECT& paint_area)
+void AsEngine::Draw_Bounds(HDC hdc, RECT &paint_area)
 {// 
    int i;
    
@@ -385,7 +419,7 @@ void AsEngine::Draw_Bounds(HDC hdc, RECT& paint_area)
 
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Ball_Reflection_Wall()
+void ABall::Ball_Reflection_Wall()
 {//
    if (Ball_X_Pos < Border_X_Offset)                                                             // From the left
    {
@@ -409,7 +443,7 @@ void AsEngine::Ball_Reflection_Wall()
    }
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Ball_Reflection_Brick()
+void ABall::Ball_Reflection_Brick()
 {//
    RECT interseption_rect;
 
@@ -453,7 +487,7 @@ void AsEngine::Ball_Reflection_Brick()
    }
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Ball_Reflection_Platform()
+void ABall::Ball_Reflection_Platform()
 {
    RECT interseption_rect;
 
@@ -464,27 +498,3 @@ void AsEngine::Ball_Reflection_Platform()
    }
 }
 //------------------------------------------------------------------------------------------------------------
-void AsEngine::Move_Ball()
-{//
-   Prev_Ball_Rect = Ball_Rect;
-
-   Prev_Ball_X_Pos = Ball_X_Pos;
-   Prev_Ball_Y_Pos = Ball_Y_Pos;
-
-   Ball_X_Pos += Cos_Ball_Direction * Ball_Speed;
-   Ball_Y_Pos -= Sin_Ball_Direction * Ball_Speed;
-
-   Ball_Reflection_Wall();
-
-   Ball_Rect.left = (int)round((Ball_X_Pos) * Global_Scale);
-   Ball_Rect.top = (int)round((Ball_Y_Pos) * Global_Scale);
-   Ball_Rect.right = (int)round(Ball_Rect.left + Ball_Size * Global_Scale);
-   Ball_Rect.bottom = (int)round(Ball_Rect.top + Ball_Size * Global_Scale);
-
-   InvalidateRect(Hwnd, &Prev_Ball_Rect, FALSE);
-   InvalidateRect(Hwnd, &Ball_Rect, FALSE);
-
-   Ball_Reflection_Brick();
-   Ball_Reflection_Wall();
-   Ball_Reflection_Platform();
-}
