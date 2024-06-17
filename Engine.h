@@ -28,15 +28,17 @@ enum ELetter_Type
 //------------------------------------------------------------------------------------------------------------
 const int Timer_ID = WM_USER + 1;
 //------------------------------------------------------------------------------------------------------------
+class AsEngine;
 class ABall
 {
 public:
-   void Draw_Ball(HDC hdc, RECT &paint_area);
-   void Move_Ball();
+   ABall();
 
+   void Draw_Ball(HDC hdc, RECT &paint_area);
+   void Move_Ball(AsEngine *Engine);
    void Ball_Reflection_Wall();
-   void Ball_Reflection_Brick();
-   void Ball_Reflection_Platform();
+   void Ball_Reflection_Brick(AsEngine *Engine);
+   void Ball_Reflection_Platform(AsEngine *Engine);
 
    double Ball_X_Pos, Ball_Y_Pos;
    double Prev_Ball_X_Pos, Prev_Ball_Y_Pos;
@@ -63,6 +65,16 @@ public:
    int On_Timer();
 
    static const int Level_Width = 12, Level_Height = 14;                          // Width and Height expressed in cells
+   static const int Border_X_Offset = 6, Border_Y_Offset = 4;
+   static const int Brick_Width = 15, Brick_Height = 7;
+   static const int Cell_Width = Brick_Width + 1, Cell_Height = Brick_Height + 1;
+   static const int Level_X_Offset = 8, Level_Y_Offset = 6;                       // Coordinates of the beginning of the level
+   static const int Level_X_Offset_Left = 8, Level_X_Offset_Right = Level_X_Offset_Left + Cell_Width * Level_Width;
+   static const int Max_X_Pos = 201;
+
+   RECT Level_Rect;
+   RECT Brick_Rect_01[Level_Height][Level_Width];
+   RECT Platform_Rect, Prev_Platform_Rect;
 
 private:
    void Create_Pen_Brush(unsigned char r, unsigned char g, unsigned char b, HPEN &pen, HBRUSH &brush);
@@ -86,22 +98,12 @@ private:
    int Platform_Width;
    int Timer_Frequency;      // Frame refresh time in msec
 
-   RECT Platform_Rect, Prev_Platform_Rect;
-   RECT Level_Rect;
-
-   RECT Brick_Rect_01[Level_Height][Level_Width];
-
    ABall Ball;
 
    static const int Global_Scale = 3;
-   static const int Brick_Width = 15, Brick_Height = 7;
-   static const int Cell_Width = Brick_Width + 1, Cell_Height = Brick_Height + 1;
-   static const int Level_X_Offset = 8, Level_Y_Offset = 6;                       // Coordinates of the beginning of the level
    static const int Circle_Size = 7;
    static const int Platform_Y_Pos = 185, Platform_Height = 7;
-   static const int Level_X_Offset_Left = 8, Level_X_Offset_Right = Level_X_Offset_Left + Cell_Width * Level_Width;
    static const int Border_Top_Offset = 1, Border_Left_Offset = 2, Border_Right_Offset = 201, Border_Bottom_Offset = 99;
-   static const int Border_X_Offset = 6, Border_Y_Offset = 4;
-   static const int Max_X_Pos = 201;
+
 };
 //------------------------------------------------------------------------------------------------------------

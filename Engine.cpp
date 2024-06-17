@@ -21,6 +21,10 @@ char Level_01[AsEngine::Level_Height][AsEngine::Level_Width] =
 //------------------------------------------------------------------------------------------------------------
 void ABall::Draw_Ball(HDC hdc, RECT &paint_area)
 {
+   RECT intersection_rect;
+   if (! IntersectRect(&intersection_rect, &paint_area, &Ball_Rect))
+      return;
+
    // Draw background
    SelectObject(hdc, BG_Pen);
    SelectObject(hdc, BG_Brush);
@@ -34,7 +38,7 @@ void ABall::Draw_Ball(HDC hdc, RECT &paint_area)
    Ellipse(hdc, Ball_Rect.left, Ball_Rect.top, Ball_Rect.right - 1, Ball_Rect.bottom - 1);
 }
 //------------------------------------------------------------------------------------------------------------
-void ABall::Move_Ball()
+void ABall::Move_Ball(AsEngine *Engine)
 {//
    Prev_Ball_Rect = Ball_Rect;
 
@@ -54,9 +58,9 @@ void ABall::Move_Ball()
    InvalidateRect(Hwnd, &Prev_Ball_Rect, FALSE);
    InvalidateRect(Hwnd, &Ball_Rect, FALSE);
 
-   Ball_Reflection_Brick();
+   Ball_Reflection_Brick(Engine);
    Ball_Reflection_Wall();
-   Ball_Reflection_Platform();
+   Ball_Reflection_Platform(Engine);
 }
 //------------------------------------------------------------------------------------------------------------
 
@@ -64,13 +68,15 @@ void ABall::Move_Ball()
 
 
 //------------------------------------------------------------------------------------------------------------
-ABall::AsEngine()
-: Ball_X_Pos(20.0), Ball_Y_Pos(170.0), Ball_Speed(1.0), Ball_Direction(M_PI_4), Cos_Ball_Direction(cos(Ball_Direction)), Sin_Ball_Direction(sin(Ball_Direction)), Timer_Frequency(20)/*Frame refresh time in msec*/ 
+ABall::ABall()
+: Ball_X_Pos(20.0), Ball_Y_Pos(170.0), Ball_Speed(1.0), Ball_Direction(M_PI_4),
+  Cos_Ball_Direction(cos(Ball_Direction)), Sin_Ball_Direction(sin(Ball_Direction))
 {
 }
 //------------------------------------------------------------------------------------------------------------
 AsEngine::AsEngine()
-: Inner_Width(21), Platform_X_Pos(Level_X_Offset_Left), Platform_X_Step(Global_Scale), Platform_Width(28)
+: Inner_Width(21), Platform_X_Pos(Level_X_Offset_Left), Platform_X_Step(Global_Scale), Platform_Width(28),
+  Timer_Frequency(20)/*Frame refresh time in msec*/ 
 {
 }
 //------------------------------------------------------------------------------------------------------------
@@ -115,8 +121,7 @@ void AsEngine::Draw_Frame(HDC hdc, RECT &paint_area)
    //   Draw_Brick_Letter(hdc, i, EBT_Blue, ELT_O, 20 + i * Cell_Width * Global_Scale, 100);
    //   Draw_Brick_Letter(hdc, i, EBT_Red, ELT_O, 20 + i * Cell_Width * Global_Scale, 130);
    //}
-   if (IntersectRect(&intersection_rect, &paint_area, &Ball_Rect))
-      Draw_Ball(hdc, paint_area);
+   Ball.Draw_Ball(hdc, paint_area);
 
    Draw_Bounds(hdc, paint_area);
 
@@ -152,8 +157,7 @@ int AsEngine::On_Key_Down(EKey_Type key_type)
 //------------------------------------------------------------------------------------------------------------
 int AsEngine::On_Timer()
 {//
-   Move_Ball();
-
+   Ball.Move_Ball(this);
    return 0;
 }
 //------------------------------------------------------------------------------------------------------------
@@ -421,20 +425,20 @@ void AsEngine::Draw_Bounds(HDC hdc, RECT &paint_area)
 //------------------------------------------------------------------------------------------------------------
 void ABall::Ball_Reflection_Wall()
 {//
-   if (Ball_X_Pos < Border_X_Offset)                                                             // From the left
+   if (Ball_X_Pos < AsEngine::Border_X_Offset)                                                             // From the left
    {
       Cos_Ball_Direction = -Cos_Ball_Direction;
-      Ball_X_Pos = 2 * Border_X_Offset - Ball_X_Pos;
+      Ball_X_Pos = 2 * AsEngine::Border_X_Offset - Ball_X_Pos;
    }
-   if (Ball_X_Pos > Level_X_Offset_Right - Ball_Size)                                            // From the right
+   if (Ball_X_Pos > AsEngine::Level_X_Offset_Right - Ball_Size)                                            // From the right
    {
       Cos_Ball_Direction = -Cos_Ball_Direction;
-      Ball_X_Pos = 2 * (Max_X_Pos - Ball_Size) - Ball_X_Pos;
+      Ball_X_Pos = 2 * (AsEngine::Max_X_Pos - Ball_Size) - Ball_X_Pos;
    }
-   if (Ball_Y_Pos < Border_Y_Offset)                                                             // From the top
+   if (Ball_Y_Pos < AsEngine::Border_Y_Offset)                                                             // From the top
    {
       Sin_Ball_Direction = -Sin_Ball_Direction;
-      Ball_Y_Pos = 2 * Border_Y_Offset - Ball_Y_Pos;
+      Ball_Y_Pos = 2 * AsEngine::Border_Y_Offset - Ball_Y_Pos;
    }
    if (Ball_Y_Pos > 205 - Ball_Size)                                                             // From the bottom
    {
@@ -443,17 +447,17 @@ void ABall::Ball_Reflection_Wall()
    }
 }
 //------------------------------------------------------------------------------------------------------------
-void ABall::Ball_Reflection_Brick()
+void ABall::Ball_Reflection_Brick(AsEngine *Engine)
 {//
    RECT interseption_rect;
 
    int i, j;
 
-   if (IntersectRect(&interseption_rect, &Ball_Rect, &Level_Rect)) //Checking for intersection with brick
+   if (IntersectRect(&interseption_rect, &Ball_Rect, &Engine->Level_Rect)) //Checking for intersection with brick
    {
       // identification brick[i][j] 
-      j = ((Ball_Rect.right + Ball_Rect.left) / 2 + Ball_Size * Cos_Ball_Direction * Global_Scale / 2 - Level_X_Offset_Left * Global_Scale) / (16 * Global_Scale);   //  int number brick in j-coordinates
-      i = ((Ball_Rect.top + Ball_Rect.bottom) / 2 - Ball_Size * Sin_Ball_Direction * Global_Scale / 2 - Level_Y_Offset * Global_Scale) / (8 * Global_Scale);         //  int number brick in i-coordinates
+      j = (int)(((Ball_Rect.right + Ball_Rect.left) / 2 + Ball_Size * Cos_Ball_Direction * Global_Scale / 2 - AsEngine::Level_X_Offset_Left * Global_Scale) / (16 * Global_Scale));   //  int number brick in j-coordinates
+      i = (int)(((Ball_Rect.top + Ball_Rect.bottom) / 2 - Ball_Size * Sin_Ball_Direction * Global_Scale / 2 - AsEngine::Level_Y_Offset * Global_Scale) / (8 * Global_Scale));         //  int number brick in i-coordinates
 
       if (j == 12)
          j = 11;
@@ -466,11 +470,11 @@ void ABall::Ball_Reflection_Brick()
       // checking if brick[i][j] isn't NULL
       if (Level_01[i][j] != 0)
       {
-          IntersectRect(&interseption_rect, &Ball_Rect, &Brick_Rect_01[i][j]);
+          IntersectRect(&interseption_rect, &Ball_Rect, &Engine->Brick_Rect_01[i][j]);
 
          if (((interseption_rect.right - interseption_rect.left) > 5 && (interseption_rect.bottom - interseption_rect.top < 12)) &&
-            ((Sin_Ball_Direction > 0 && (interseption_rect.bottom + interseption_rect.top) > Brick_Rect_01[i][j].bottom + Brick_Rect_01[i][j].top) ||
-               (Sin_Ball_Direction < 0 && (interseption_rect.bottom + interseption_rect.top) < Brick_Rect_01[i][j].bottom + Brick_Rect_01[i][j].top))) // Описание условия для вертикального отскока от кирппича
+            ((Sin_Ball_Direction > 0 && (interseption_rect.bottom + interseption_rect.top) > Engine->Brick_Rect_01[i][j].bottom + Engine->Brick_Rect_01[i][j].top) ||
+               (Sin_Ball_Direction < 0 && (interseption_rect.bottom + interseption_rect.top) < Engine->Brick_Rect_01[i][j].bottom + Engine->Brick_Rect_01[i][j].top))) // Описание условия для вертикального отскока от кирппича
          {
             Sin_Ball_Direction = -Sin_Ball_Direction;
             Ball_Y_Pos = Prev_Ball_Y_Pos;
@@ -482,19 +486,19 @@ void ABall::Ball_Reflection_Brick()
          }
 
          Level_01[i][j] = 0;
-         InvalidateRect(Hwnd, &Level_Rect, FALSE); // Deleting the brick we reflect from
+         InvalidateRect(Hwnd, &Engine->Level_Rect, FALSE); // Deleting the brick we reflect from
       }
    }
 }
 //------------------------------------------------------------------------------------------------------------
-void ABall::Ball_Reflection_Platform()
+void ABall::Ball_Reflection_Platform(AsEngine *Engine)
 {
    RECT interseption_rect;
 
-   if (IntersectRect(&interseption_rect, &Ball_Rect, &Platform_Rect) && Sin_Ball_Direction < 0)
+   if (IntersectRect(&interseption_rect, &Ball_Rect, &Engine->Platform_Rect) && Sin_Ball_Direction < 0)
    {
       Sin_Ball_Direction = -Sin_Ball_Direction;
-      Ball_Y_Pos = 2 * (Platform_Rect.top / Global_Scale - Ball_Size) - Ball_Y_Pos;
+      Ball_Y_Pos = 2 * (Engine->Platform_Rect.top / Global_Scale - Ball_Size) - Ball_Y_Pos;
    }
 }
 //------------------------------------------------------------------------------------------------------------
