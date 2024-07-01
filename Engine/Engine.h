@@ -5,6 +5,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "Border.h"
+
 //------------------------------------------------------------------------------------------------------------
 enum ELetter_Type
 {
@@ -45,7 +47,6 @@ public:
 	HPEN Ball_Pen;
 	HBRUSH Ball_Brush;
 	double Ball_Direction;
-	double Cos_Ball_Direction, Sin_Ball_Direction;
 
 	static const int Ball_Size = 4;
 
@@ -60,6 +61,7 @@ class ALevel
 {
 public:
 	void Init();
+
 	void Check_Level_Brick_Hit(int &next_y_pos, double &ball_direction);
 	void Draw(HDC hdc, RECT &paint_area);
 
@@ -69,8 +71,6 @@ public:
 	static const int Level_Y_Offset = 6;
 	static const int Cell_Width = 16;
 	static const int Cell_Height = 8;
-
-	RECT Brick_Rect_01[Level_Height][Level_Width];
 
 private:
 	void Draw_Brick(HDC hdc, int x, int y, EBrick_Type brick_type);
@@ -112,22 +112,6 @@ private:
 	static const int Circle_Size = 7;
 };
 //------------------------------------------------------------------------------------------------------------
-class AsBorder
-{
-public:
-	void Init();
-	void Draw(HDC hdc, RECT &paint_area, AsEngine *engine);
-
-	static const int Border_X_Offset = 6;
-	static const int Border_Y_Offset = 4;
-
-private:
-	void Draw_Element(HDC hdc, int x, int y, bool top_boder, AsEngine *engine);
-
-	HPEN Border_Blue_Pen, Border_White_Pen;
-	HBRUSH Border_Blue_Brush, Border_White_Brush;
-};
-//------------------------------------------------------------------------------------------------------------
 class AsEngine
 {
 public:
@@ -138,13 +122,13 @@ public:
 	int On_Key_Down(EKey_Type key_type);
 	int On_Timer();
 
-	static void Create_Pen_Brush(unsigned char r, unsigned char g, unsigned char b, HPEN &pen, HBRUSH &brush);
+
 
 	HWND Hwnd;
 	HPEN BG_Pen;
 	HBRUSH BG_Brush;
 
-	static const int Global_Scale = 3;
+
 	static const int Max_X_Pos = ALevel::Level_X_Offset + ALevel::Cell_Width * ALevel::Level_Width;
 	static const int Max_Y_Pos = 199 - ABall::Ball_Size;
 
